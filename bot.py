@@ -39,15 +39,19 @@ async def on_message(message):
         return
 
     if nextMessage[0] == True and str(message.channel) == nextMessage[1]:
-        if str(message.content).strip().lower()[0] == "s":
-            addXpToPlayer()
+        try:
+            if str(message.content).strip().lower()[0] == "s":
+                addXpToPlayer()
 
-            await message.channel.send(f'{players[playerSettings[0]][1]} de xp foi adicionado ao personagem {playerSettings[0]}.\nO personagem {playerSettings[0]} tem {players[playerSettings[0]][1]} de Xp, está no nível {players[playerSettings[0]][0]} e falta {xpMissingNxtLV(players[playerSettings[0]][0],players[playerSettings[0]][1])} de Xp para o próximo nível.')
+                await message.channel.send(f'{players[playerSettings[0]][1]} de xp foi adicionado ao personagem {playerSettings[0]}.\nO personagem {playerSettings[0]} tem {players[playerSettings[0]][1]} de Xp, está no nível {players[playerSettings[0]][0]} e falta {xpMissingNxtLV(players[playerSettings[0]][0],players[playerSettings[0]][1])} de Xp para o próximo nível.')
 
-        else:
-            await message.channel.send(f'A operação foi cancelada.')
+            else:
+                await message.channel.send(f'A operação foi cancelada.')
 
-        nextMessage = [False, '']
+            nextMessage = [False, '']
+
+        except Exception as e:
+            await message.channel.send(f'Erro {e}. Código 01. Reporte este erro o mais rápido possível.')
 
     await bot.process_commands(message)
 
@@ -58,7 +62,7 @@ async def addXp(ctx, name, xp):
     try:
         try:
             xp = int(xp)
-        
+
         except:
             await ctx.send('Xp deve ser um número inteiro.')
 
@@ -76,7 +80,7 @@ async def addXp(ctx, name, xp):
                 await ctx.send(f'Pesonagem {name} não existe.')
 
     except Exception as e:
-        raise e
+        await ctx.send(f'Erro {e}. Código 02. Reporte este erro o mais rápido possível.')
 
 @addXp.error
 async def addXp_error(ctx, error):
@@ -105,7 +109,7 @@ async def getSave(ctx):
         await ctx.send(response)
 
     except Exception as e:
-        raise e
+        await ctx.send(f'Erro {e}. Código 03. Reporte este erro o mais rápido possível.')
 
 @bot.command(name='criarpersonagem')
 async def addPlayer(ctx, name, Xp=0):
@@ -118,12 +122,12 @@ async def addPlayer(ctx, name, Xp=0):
             saveFile(FILE_NAME,players)
 
             await ctx.send(f'Personagem {name} criado com sucesso. Personagem {name} tem {Xp} de Xp, está no nível {convertXpLv(int(Xp))} e falta {xpMissingNxtLV(convertXpLv(int(Xp)),int(Xp))} de Xp para o próximo nível.')
-    
+
         else:
             await ctx.send(f'Personagem {name} já existe.')
 
     except Exception as e:
-        raise e
+        await ctx.send(f'Erro {e}. Código 04. Reporte este erro o mais rápido possível.')
 
 @addPlayer.error
 async def addPlayer_error(ctx, error):
@@ -137,16 +141,16 @@ async def deletePlayer(ctx, name):
     try:
         if str(name) in list(players.keys()):
             players.pop(str(name))
-            
+
             saveFile(FILE_NAME,players)
-            
+
             await ctx.send(f'Personagem {name} excluído com sucesso.')
-    
+
         else:
             await ctx.send(f'Personagem {name} não existe.')
 
     except Exception as e:
-        raise e    
+        await ctx.send(f'Erro {e}. Código 05. Reporte este erro o mais rápido possível.')
 
 @deletePlayer.error
 async def deletePlayer_error(ctx, error):
@@ -160,12 +164,12 @@ async def showPlayer(ctx,name):
     try:
         if str(name) in list(players.keys()):
             await ctx.send(f'O personagem {name} tem {players[name][1]} de xp, está no nível {players[name][0]} e falta {xpMissingNxtLV(players[name][0],players[name][1])} de xp para o próximo nível.')
-    
+
         else:
             await ctx.send(f'Personagem {name} não existe.')
 
     except Exception as e:
-        raise e   
+        await ctx.send(f'Erro {e}. Código 06. Reporte este erro o mais rápido possível.')
 
 @showPlayer.error
 async def showPlayer_error(ctx, error):
@@ -194,15 +198,19 @@ async def showAll(ctx):
         await ctx.send(response)
 
     except Exception as e:
-        raise e
+        await ctx.send(f'Erro {e}. Código 07. Reporte este erro o mais rápido possível.')
 
 @bot.command(name='convxplv')
 async def convertionXpLv(ctx, Xp):
-    Xp = int(Xp)
-    
-    Lv = convertXpLv(Xp)
+    try:
+        Xp = int(Xp)
 
-    await ctx.send(Lv)
+        Lv = convertXpLv(Xp)
+
+        await ctx.send(Lv)
+
+    except Exception as e:
+        await ctx.send(f'Erro {e}. Código 08. Reporte este erro o mais rápido possível.')
 
 @convertionXpLv.error
 async def convertionXpLv_error(ctx, error):
@@ -211,11 +219,15 @@ async def convertionXpLv_error(ctx, error):
 
 @bot.command(name='convlvxp')
 async def convertionLvXp(ctx, Lv):
-    Lv = int(Lv)
+    try:
+        Lv = int(Lv)
 
-    Xp = convertLvXp(Lv)
+        Xp = convertLvXp(Lv)
 
-    await ctx.send(Xp)
+        await ctx.send(Xp)
+
+    except Exception as e:
+        await ctx.send(f'Erro {e}. Código 09. Reporte este erro o mais rápido possível.')
 
 @convertionXpLv.error
 async def convertionXpLv_error(ctx, error):
@@ -224,13 +236,17 @@ async def convertionXpLv_error(ctx, error):
 
 @bot.command(name='proximolv')
 async def nextLv(ctx, Xp):
-    Xp = int(Xp)
+    try:
+        Xp = int(Xp)
 
-    Lv = convertXpLv(Xp)
+        Lv = convertXpLv(Xp)
 
-    XpToNxLv = xpMissingNxtLV(Lv, Xp)
+        XpToNxLv = xpMissingNxtLV(Lv, Xp)
 
-    await ctx.send(XpToNxLv)
+        await ctx.send(XpToNxLv)
+
+    except Exception as e:
+        await ctx.send(f'Erro {e}. Código 10. Reporte este erro o mais rápido possível.')
 
 @nextLv.error
 async def nextLv_error(ctx, error):
@@ -239,7 +255,8 @@ async def nextLv_error(ctx, error):
 
 @bot.command(name='comandos')
 async def showCommands(ctx):
-    response = '''Criar Personagem:
+    try:
+        response =  '''Criar Personagem:
     !criarpersonagem Nome Xp-inicial (opcional = 0)
 
 Excluir Personagem:
@@ -267,6 +284,9 @@ Xp para o Próximo LV: Mostra quanto Xp falta para o próximo nível.
     !proximolv Xp
 '''
 
-    await ctx.send(response)
+        await ctx.send(response)
+
+    except Exception as e:
+        await ctx.send(f'Erro {e}. Código 11. Reporte este erro o mais rápido possível.')
 
 bot.run(TOKEN)
