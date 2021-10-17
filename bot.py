@@ -5,6 +5,8 @@ from math import sqrt
 from decouple import config
 from xpOperations.XpOperations import *
 from filesOperations.FilesOperations import *
+from discord import File
+
 
 TOKEN = config('TOKEN')
 FILE_NAME = config('FILE_NAME')
@@ -18,6 +20,9 @@ def addXpToPlayer():
     global players, playerSettings
 
     players[playerSettings[0]][1] += playerSettings[1]
+
+    if players[playerSettings[0]][1] > 5063625000:
+        players[playerSettings[0]][1] = 5063625000
 
     xp = players[playerSettings[0]][1]
 
@@ -43,7 +48,13 @@ async def on_message(message):
             if str(message.content).strip().lower()[0] == "s":
                 addXpToPlayer()
 
-                await message.channel.send(f'{players[playerSettings[0]][1]} de xp foi adicionado ao personagem {playerSettings[0]}.\nO personagem {playerSettings[0]} tem {players[playerSettings[0]][1]} de Xp, está no nível {players[playerSettings[0]][0]} e falta {xpMissingNxtLV(players[playerSettings[0]][0],players[playerSettings[0]][1])} de Xp para o próximo nível.')
+                if players[playerSettings[0]][0] == 4500:
+                    response = f'O personagem {playerSettings[0]} tem {players[playerSettings[0]][1]} de Xp e está no nível máximo {players[playerSettings[0]][0]}'
+
+                else:
+                    response = f'{playerSettings[1]} de xp foi adicionado ao personagem {playerSettings[0]}.\nO personagem {playerSettings[0]} tem {players[playerSettings[0]][1]} de Xp, está no nível {players[playerSettings[0]][0]} e falta {xpMissingNxtLV(players[playerSettings[0]][0],players[playerSettings[0]][1])} de Xp para o próximo nível.'
+
+                await message.channel.send(response)
 
             else:
                 await message.channel.send(f'A operação foi cancelada.')
@@ -92,6 +103,8 @@ async def getSave(ctx):
     global players
 
     try:
+        saveFile(FILE_NAME,players)
+
         response = ''
 
         playerKeys = list(players.keys())
@@ -106,7 +119,7 @@ async def getSave(ctx):
         if response == '':
             response = 'Nenhum Personagem foi Cadastrado.'
 
-        await ctx.send(response)
+        await ctx.send(content= response, file= File(fp= FILE_NAME, filename= FILE_NAME))
 
     except Exception as e:
         await ctx.send(f'Erro {e}. Código 03. Reporte este erro o mais rápido possível.')
@@ -163,7 +176,11 @@ async def showPlayer(ctx,name):
 
     try:
         if str(name) in list(players.keys()):
-            await ctx.send(f'O personagem {name} tem {players[name][1]} de xp, está no nível {players[name][0]} e falta {xpMissingNxtLV(players[name][0],players[name][1])} de xp para o próximo nível.')
+            if players[name][0] >= 4500:
+                await ctx.send(f'O personagem {name} tem {players[name][1]} de xp e está no nível máximo {players[name][0]}.')
+
+            else:
+                await ctx.send(f'O personagem {name} tem {players[name][1]} de xp, está no nível {players[name][0]} e falta {xpMissingNxtLV(players[name][0],players[name][1])} de xp para o próximo nível.')
 
         else:
             await ctx.send(f'Personagem {name} não existe.')
@@ -187,10 +204,18 @@ async def showAll(ctx):
 
         for player in range(len(playerKeys)):
             if player == 0:
-                response = response + f'Nome: {playerKeys[player]}, Nível: {players[playerKeys[player]][0]}, Xp: {players[playerKeys[player]][1]}, Xp necessário para o próximo nível: {xpMissingNxtLV(players[playerKeys[player]][0],players[playerKeys[player]][1])}.\n'
+                if players[playerKeys[player]][0] >= 4500:
+                    response = response + f'Nome: {playerKeys[player]}, Nível: {players[playerKeys[player]][0]}, Xp: {players[playerKeys[player]][1]}.\n'
+
+                else:
+                    response = response + f'Nome: {playerKeys[player]}, Nível: {players[playerKeys[player]][0]}, Xp: {players[playerKeys[player]][1]}, Xp necessário para o próximo nível: {xpMissingNxtLV(players[playerKeys[player]][0],players[playerKeys[player]][1])}.\n'
 
             else:
-                response = response + f'\nNome: {playerKeys[player]}, Nível: {players[playerKeys[player]][0]}, Xp: {players[playerKeys[player]][1]}, Xp necessário para o próximo nível: {xpMissingNxtLV(players[playerKeys[player]][0],players[playerKeys[player]][1])}.\n'
+                if players[playerKeys[player]][0] >= 4500:
+                    response = response + f'\nNome: {playerKeys[player]}, Nível: {players[playerKeys[player]][0]}, Xp: {players[playerKeys[player]][1]}.\n'
+
+                else:
+                    response = response + f'\nNome: {playerKeys[player]}, Nível: {players[playerKeys[player]][0]}, Xp: {players[playerKeys[player]][1]}, Xp necessário para o próximo nível: {xpMissingNxtLV(players[playerKeys[player]][0],players[playerKeys[player]][1])}.\n'
 
         if response == '':
             response = 'Nenhum Personagem foi Cadastrado'
@@ -205,7 +230,10 @@ async def convertionXpLv(ctx, Xp):
     try:
         Xp = int(Xp)
 
-        Lv = convertXpLv(Xp)
+        Lv = int(convertXpLv(Xp))
+
+        if Lv >= 4500:
+            Lv = 4500
 
         await ctx.send(Lv)
 
@@ -222,7 +250,10 @@ async def convertionLvXp(ctx, Lv):
     try:
         Lv = int(Lv)
 
-        Xp = convertLvXp(Lv)
+        Xp = int(convertLvXp(Lv))
+
+        if Xp >= 5063625000:
+            Xp = 5063625000
 
         await ctx.send(Xp)
 
@@ -241,7 +272,11 @@ async def nextLv(ctx, Xp):
 
         Lv = convertXpLv(Xp)
 
-        XpToNxLv = xpMissingNxtLV(Lv, Xp)
+        if Lv >= 4500:
+            XpToNxLv = f'Já está no nível máximo.'
+
+        else:
+            XpToNxLv = xpMissingNxtLV(Lv, Xp)
 
         await ctx.send(XpToNxLv)
 
@@ -271,7 +306,7 @@ Mostrar Personagem: Mostra informações sobre um personagem.
 Mostrar Todos os Personagem: Mostra informações sobre todos os personagem.
     !mostrartodos
 
-Gerar Save: Mostra as informações como está salva. (Backup)
+Gerar Save: Mostra as informações como estão salvas e gera um arquivo de Backup.
     !gerarsave
 
 Converter Xp-Lv:
