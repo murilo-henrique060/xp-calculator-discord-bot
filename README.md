@@ -7,7 +7,7 @@ xp calculator discord bot for rpg
 Converts, calculates and stores information about a character (name, level, xp). To move to the next level you must have the amount that was needed to move to this level plus 500.
 
 Example:\
-    Level x = (Level x-1 + level needed to get to the previous level + 500)\
+    Level x = (Level x-1 + xp needed to get to the previous level + 500)\
     Level 1 = 500 Xp\ (  0  + 500)\
     Level 2 = 1500 Xp (500  + 1000)\
     Level 3 = 3000 Xp (1500 + 1500))\
@@ -52,7 +52,7 @@ Bot do Discord Calculadora de xp para rpg
 Converte, calcula e armazena informações sobre um personagem (nome, nível, xp). Para passar para o próximo nível, você deve ter a quantia necessária para passar para este nível mais 500.
 
 Exemplo:\
-    Nível x = (Nível x-1 + nível necessário para chegar no nível anterior + 500)\
+    Nível x = (Nível x-1 + xp necessário para chegar no nível anterior + 500)\
     Nível 1 = 500 Xp\ (  0  + 500)\
     Nível 2 = 1500 Xp ( 500 + 1000)\
     Nível 3 = 3000 Xp (1500 + 1500)\
