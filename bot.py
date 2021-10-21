@@ -4,17 +4,19 @@ from discord.ext.commands.errors import *
 from math import sqrt
 from decouple import config
 from xpOperations.XpOperations import *
-from filesOperations.FilesOperations import *
 from discord import File
-
 
 TOKEN = config('TOKEN')
 FILE_NAME = config('FILE_NAME')
+CHANNEL_ID = int(config('CHANNEL_ID'))
 
-players = getPlayers(FILE_NAME)
+players = {}
 playerSettings = []
 
+recoverySave = [False, '', []]
 nextMessage = [False, '']
+
+firstTime = True
 
 def addXpToPlayer():
     global players, playerSettings
@@ -28,20 +30,59 @@ def addXpToPlayer():
 
     players[playerSettings[0]][0] = convertXpLv(xp)
 
-    saveFile(FILE_NAME,players)
+def save():
+    global CHANNEL_ID, players
 
-bot = commands.Bot('!')
+    response = ''
+
+    channel = bot.get_channel(CHANNEL_ID)
+
+    playersKeys = list(players.keys())
+    for i in range(len(playersKeys)):
+        if i == 0:
+            response = response + f'{playersKeys[i]}, {players[playersKeys[i]][0]}, {players[playersKeys[i]][1]}'
+
+        else:
+            response = response + f'\n{playersKeys[i]}, {players[playersKeys[i]][0]}, {players[playersKeys[i]][1]}'
+
+    return channel, response
+
+def readSave(players, channel, messages):
+    players = {}
+
+    for messag in messages:
+        lines = messag.content.split('\n')
+
+        for line in lines:
+            content = line.split(', ')
+
+            players[str(content[0]).strip()] = [int(str(content[1]).strip()),int(str(content[2]).strip())]
+
+    return players
+
+bot = commands.Bot(command_prefix='!')
 
 @bot.event
 async def on_ready():
     print(f'Estou pronto! Estou conectado como {bot.user}')
 
+
 @bot.event
 async def on_message(message):
-    global nextMessage, players, playerSettings
+    global nextMessage, players, playerSettings, recoverySave, firstTime
 
     if message.author == bot.user:
         return
+
+    if firstTime:
+        channel = bot.get_channel(CHANNEL_ID)
+        messages = await channel.history(limit=1).flatten()
+
+        players = readSave(players, channel, messages)
+
+        print(players)
+
+        firstTime = False
 
     if nextMessage[0] == True and str(message.channel) == nextMessage[1]:
         try:
@@ -56,6 +97,16 @@ async def on_message(message):
 
                 await message.channel.send(response)
 
+                channel, response = save()
+
+                messages = await channel.history(limit=10).flatten()
+
+                message.channel = channel
+
+                await message.channel.delete_messages(messages)
+
+                await message.channel.send(response)
+
             else:
                 await message.channel.send(f'A operação foi cancelada.')
 
@@ -63,6 +114,7 @@ async def on_message(message):
 
         except Exception as e:
             await message.channel.send(f'Erro {e}. Código 01. Reporte este erro o mais rápido possível.')
+            raise e
 
     await bot.process_commands(message)
 
@@ -98,32 +150,6 @@ async def addXp_error(ctx, error):
     if isinstance(error, MissingRequiredArgument):
         await ctx.send('Uso:\n!addxp Nome Xp')
 
-@bot.command(name='gerarsave')
-async def getSave(ctx):
-    global players
-
-    try:
-        saveFile(FILE_NAME,players)
-
-        response = ''
-
-        playerKeys = list(players.keys())
-
-        for player in range(len(playerKeys)):
-            if player == 0:
-                response = response + f'{playerKeys[player]}, {players[str(playerKeys[player])][0]}, {players[str(playerKeys[player])][1]}'
-
-            else:
-                response = response + f'\n{playerKeys[player]}, {players[str(playerKeys[player])][0]}, {players[str(playerKeys[player])][1]}'
-
-        if response == '':
-            response = 'Nenhum Personagem foi Cadastrado.'
-
-        await ctx.send(content= response, file= File(fp= FILE_NAME, filename= FILE_NAME))
-
-    except Exception as e:
-        await ctx.send(f'Erro {e}. Código 03. Reporte este erro o mais rápido possível.')
-
 @bot.command(name='criarpersonagem')
 async def addPlayer(ctx, name, Xp=0):
     global players
@@ -132,9 +158,19 @@ async def addPlayer(ctx, name, Xp=0):
         if not (str(name) in list(players.keys())):
             players[name] = [convertXpLv(int(Xp)),int(Xp)]
 
-            saveFile(FILE_NAME,players)
-
             await ctx.send(f'Personagem {name} criado com sucesso. Personagem {name} tem {Xp} de Xp, está no nível {convertXpLv(int(Xp))} e falta {xpMissingNxtLV(convertXpLv(int(Xp)),int(Xp))} de Xp para o próximo nível.')
+
+            channel, response = save()
+
+            messages = await channel.history(limit=10).flatten()
+
+            ctx.channel = channel
+
+            await ctx.channel.delete_messages(messages)
+
+            await ctx.channel.send(response)
+
+            print(f'personagem {name} foi criado com {Xp} de xp inicial.')
 
         else:
             await ctx.send(f'Personagem {name} já existe.')
@@ -155,9 +191,19 @@ async def deletePlayer(ctx, name):
         if str(name) in list(players.keys()):
             players.pop(str(name))
 
-            saveFile(FILE_NAME,players)
-
             await ctx.send(f'Personagem {name} excluído com sucesso.')
+
+            channel, response = save()
+
+            messages = await channel.history(limit=10).flatten()
+
+            ctx.channel = channel
+
+            await ctx.channel.delete_messages(messages)
+
+            await ctx.channel.send(response)
+
+            print(f'personagem {name} foi excluído.')
 
         else:
             await ctx.send(f'Personagem {name} não existe.')
@@ -228,7 +274,12 @@ async def showAll(ctx):
 @bot.command(name='convxplv')
 async def convertionXpLv(ctx, Xp):
     try:
-        Xp = int(Xp)
+        try:
+            Xp = int(Xp)
+
+        except:
+            await ctx.send('Xp deve ser um Número Inteiro.')
+
 
         Lv = int(convertXpLv(Xp))
 
@@ -248,7 +299,11 @@ async def convertionXpLv_error(ctx, error):
 @bot.command(name='convlvxp')
 async def convertionLvXp(ctx, Lv):
     try:
-        Lv = int(Lv)
+        try:
+            Lv = int(Lv)
+
+        except:
+            await ctx.send('Lv deve ser um número inteiro.')
 
         Xp = int(convertLvXp(Lv))
 
@@ -306,9 +361,6 @@ Mostrar Personagem: Mostra informações sobre um personagem.
 Mostrar Todos os Personagem: Mostra informações sobre todos os personagem.
     !mostrartodos
 
-Gerar Save: Mostra as informações como estão salvas e gera um arquivo de Backup.
-    !gerarsave
-
 Converter Xp-Lv:
     !convxplv Xp
 
@@ -320,6 +372,8 @@ Xp para o Próximo LV: Mostra quanto Xp falta para o próximo nível.
 '''
 
         await ctx.send(response)
+
+        print('Comandos Mostrados')
 
     except Exception as e:
         await ctx.send(f'Erro {e}. Código 11. Reporte este erro o mais rápido possível.')
