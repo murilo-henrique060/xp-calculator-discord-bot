@@ -342,6 +342,27 @@ async def nextLv_error(ctx, error):
     if isinstance(error, MissingRequiredArgument):
         await ctx.send('Uso:\n!proximolv Xp')
 
+@bot.command(name='recarregar')
+async def reload(ctx):
+    global players
+
+    channel = bot.get_channel(CHANNEL_ID)
+    messages = await channel.history(limit=1).flatten()
+
+    players = readSave(players, channel, messages)
+
+    channel, response = save()
+
+    messages = await channel.history(limit=10).flatten()
+
+    ctx.channel = channel
+
+    await ctx.channel.delete_messages(messages)
+
+    await ctx.channel.send(response)
+
+    print(players)
+
 @bot.command(name='comandos')
 async def showCommands(ctx):
     try:
@@ -368,6 +389,9 @@ Converter Lv-Xp:
 
 Xp para o Próximo LV: Mostra quanto Xp falta para o próximo nível.
     !proximolv Xp
+
+Ler o arquivo de save:
+    !recarregar
 '''
 
         await ctx.send(response)
