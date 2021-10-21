@@ -7,7 +7,6 @@ from xpOperations.XpOperations import *
 from discord import File
 
 TOKEN = config('TOKEN')
-FILE_NAME = config('FILE_NAME')
 CHANNEL_ID = int(config('CHANNEL_ID'))
 
 players = {}
