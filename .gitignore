@@ -1,5 +1,6 @@
 # Vs Code Workspaces
 *.code-workspace
+.vscode/*
 
 # Test Text File
 xpcalculatortest.txt
