@@ -30,33 +30,15 @@ class XpCalculator(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        command = ctx.command.qualified_name
+        command_name = ctx.command.qualified_name
 
         if isinstance(error, MissingRequiredArgument):
-            match command:
-                case 'criarpersonagem':
-                    await ctx.send(f'Uso:\n !criarpersonagem Nome Xp-inicial(opcional = 0)')
+            command = self.bot.get_command(command_name)
 
-                case 'excluirpersonagem':
-                    await ctx.send(f'Uso:\n !excluirpersonagem Nome')
-
-                case 'addxp':
-                    await ctx.send(f'Uso:\n !addxp Nome Xp-adicional')
-
-                case 'mostrarpersonagem':
-                    await ctx.send(f'Uso:\n !mostrarpersonagem Nome')
-
-                case 'convxplv':
-                    await ctx.send(f'Uso:\n !convxplv Xp')
-
-                case 'convlvxp':
-                    await ctx.send(f'Uso:\n !convlvxp Lv')
-
-                case 'proximolv':
-                    await ctx.send(f'Uso\n !proximolv Xp')
+            await ctx.send(f'{command.help}\n\nUso:\n    {self.bot.command_prefix}{command_name} {command.signature}')
 
         elif isinstance(error, BadArgument):
-            match command:
+            match command_name:
                 case 'criarpersonagem':
                     await ctx.send(f'O valor de Xp-inicial deve ser um inteiro.')
 
