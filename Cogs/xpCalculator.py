@@ -60,6 +60,9 @@ class XpCalculator(commands.Cog):
 
             await ctx.send(f'{command.help}\n\nUso:\n    {self.bot.command_prefix}{command_name} {command.signature}')
 
+        elif isinstance(error, CommandNotFound):
+            print(f'Command {command_name} not found.')
+
         elif isinstance(error, BadArgument):
             match command_name:
                 case 'criarpersonagem':
@@ -112,7 +115,7 @@ class XpCalculator(commands.Cog):
 
             await ctx.channel.delete_messages(messages)
 
-            await ctx.channel.send(response)    
+            await ctx.channel.send(response)
 
     @commands.command(name='excluirpersonagem', help='Remove um personagem.')
     async def deletePlayer(self, ctx, name: str):
