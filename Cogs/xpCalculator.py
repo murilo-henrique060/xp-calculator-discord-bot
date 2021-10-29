@@ -42,6 +42,9 @@ class XpCalculator(commands.Cog):
             case 'boa noite':
                 await message.channel.send(f'Boa noite,{message.author.mention}')
 
+            case 'a main()':
+                await message.channel.send(f'{message.author.mention}, cheat mode on.')
+
         if self.bot.user in message.mentions and 'bom dia' in message.content.lower():
             await message.channel.send(f'Obrigado {message.author.mention}, bom dia para você também')
 
@@ -236,6 +239,11 @@ class XpCalculator(commands.Cog):
     async def nextLv(self, ctx, xp: int):
         """Next Lv"""
         await ctx.send(f'{xpMissingNxtLV(convertXpLv(xp),xp)}.')
+
+    @commands.command(name='intervenção', help='livrai-vos de todo malware.')
+    async def help(self, ctx):
+        """Help"""
+        await ctx.send('Código nosso que está em C\nSantificado seja vós, console\nVenha nos o vosso array[10]\nE seja feita, {vossa chave}\nAssim no if{\n} Como no Else{\n} \nO for(nosso;de cada dia;nos daí hoje++)\nDebugai as nossas sentenças \nAssim como nós colocamos o ponto e vírgula esquecido;\nE não nos\n     Deixeis errar\n             Indentação\nMas compilai nosso código\nA main().')
 
     @commands.command(name='reload', help='Recarrega os dados do bot.')
     async def reload(self, ctx):
