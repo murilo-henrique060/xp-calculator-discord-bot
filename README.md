@@ -8,7 +8,7 @@ Converts, calculates and stores information about a character (name, level, xp).
 
 Example:\
     Level x = (Level x-1 + xp needed to get to the previous level + 500)\
-    Level 1 = 500 Xp\ (  0  + 500)\
+    Level 1 = 500 Xp (  0  + 500)\
     Level 2 = 1500 Xp (500  + 1000)\
     Level 3 = 3000 Xp (1500 + 1500))\
     Level 4 = 5000 Xp (3000 + 2000)\
