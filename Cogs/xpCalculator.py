@@ -56,7 +56,7 @@ class XpCalculator(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        command_name = ctx.command.qualified_name
+        command_name = ctx.message.content.split()[0].replace('!', '')
 
         if isinstance(error, MissingRequiredArgument):
             command = self.bot.get_command(command_name)
