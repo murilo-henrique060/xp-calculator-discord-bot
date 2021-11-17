@@ -28,33 +28,6 @@ class XpCalculator(commands.Cog):
         print(self.players)
 
     @commands.Cog.listener()
-    async def on_message(self, message):
-        if message.author.bot:
-            return
-
-        match message.content.lower():
-            case 'bom dia':
-                await message.channel.send(f'Bom dia,{message.author.mention}')
-
-            case 'boa tarde':
-                await message.channel.send(f'Boa tarde,{message.author.mention}')
-
-            case 'boa noite':
-                await message.channel.send(f'Boa noite,{message.author.mention}')
-
-            case 'a main()':
-                await message.channel.send(f'{message.author.mention}, cheat mode on.')
-
-        if self.bot.user in message.mentions and 'bom dia' in message.content.lower():
-            await message.channel.send(f'Obrigado {message.author.mention}, bom dia para você também')
-
-        elif self.bot.user in message.mentions and 'boa tarde' in message.content.lower():
-            await message.channel.send(f'Obrigado {message.author.mention}, boa tarde para você também')
-
-        elif self.bot.user in message.mentions and 'boa noite' in message.content.lower():
-            await message.channel.send(f'Obrigado {message.author.mention}, boa noite para você também')
-
-    @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
         command_name = ctx.message.content.split()[0].replace('!', '')
 
