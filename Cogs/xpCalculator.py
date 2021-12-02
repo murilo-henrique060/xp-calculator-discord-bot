@@ -173,7 +173,7 @@ class XpCalculator(commands.Cog):
     async def showPlayer(self, ctx, name: str):
         """Show Player"""
         if name in list(self.players.keys()):
-            if self.players[name]["lv"] < 4500:
+            if self.players[name]["lv"] < 30000:
                 await ctx.send(f'O personagem {name} tem {self.players[name]["xp"]} de Xp, está no nível {self.players[name]["lv"]} e falta {xpMissingNxtLV(self.players[name]["lv"],self.players[name]["xp"])} de Xp para o próximo nível.')
 
             else:
