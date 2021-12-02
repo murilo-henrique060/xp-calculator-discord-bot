@@ -135,7 +135,7 @@ class XpCalculator(commands.Cog):
             self.players[name]["xp"]  = maxXp(self.players[name]["xp"] + xp)
             self.players[name]["lv"] = convertXpLv(self.players[name]["xp"])
 
-            if self.players[name]["lv"] == 4500:
+            if self.players[name]["lv"] == 30000:
                 print(f'O personagem {name} chegou ao nível máximo.')
                 response = f'O personagem {name} tem {self.players[name]["xp"]} de Xp e está no nível máximo {self.players[name]["lv"]}'
 
@@ -190,7 +190,7 @@ class XpCalculator(commands.Cog):
         self.playersKeys = list(self.players.keys())
 
         for i in range(len(self.playersKeys)):
-            if self.players[self.playersKeys[i]]["lv"] < 4500:
+            if self.players[self.playersKeys[i]]["lv"] < 30000:
                 response += f'O personagem {self.playersKeys[i]} tem {self.players[self.playersKeys[i]]["xp"]} de Xp, está no nível {self.players[self.playersKeys[i]]["lv"]} e falta {xpMissingNxtLV(self.players[self.playersKeys[i]]["lv"],self.players[self.playersKeys[i]]["xp"])} de Xp para o próximo nível.\n'
 
             else:
