@@ -1,4 +1,4 @@
-MAX_LV = 4500
+MAX_LV = 30000
 MAX_XP = 5063625000
 
 def convertXpLv(xp: int) -> int:
@@ -9,7 +9,7 @@ def convertXpLv(xp: int) -> int:
     except ValueError:
         return False
 
-    return int((-5 + sqrt(25 - 20 * (-2 * (xp / 100))))/10) if xp < MAX_XP else MAX_LV
+    return int((-5 + sqrt(25 - 20 * (-2 * (xp / 100))))/10) 
 
 def convertLvXp(lv: int) -> int:
     try:
@@ -17,7 +17,7 @@ def convertLvXp(lv: int) -> int:
     except ValueError:
         return False
 
-    return int(500 * (((lv + 1) * lv) / 2)) if lv < MAX_LV else MAX_XP
+    return int(500 * (((lv + 1) * lv) / 2)) 
 
 def xpMissingNxtLV(lv: int, xp: int) -> int:
     try:
