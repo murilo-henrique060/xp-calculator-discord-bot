@@ -1,5 +1,5 @@
 MAX_LV = 30000
-MAX_XP = 5063625000
+MAX_XP = 225007500000
 
 def convertXpLv(xp: int) -> int:
     from math import sqrt
@@ -26,7 +26,7 @@ def xpMissingNxtLV(lv: int, xp: int) -> int:
     except ValueError:
         return False
 
-    return int(convertLvXp(lv + 1) - xp) if lv < MAX_LV else False
+    return int(convertLvXp(lv + 1) - xp) if lv < MAX_LV else 0
 
 def maxXp(xp: int) -> int:
     try:
