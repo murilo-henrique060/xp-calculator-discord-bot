@@ -4,7 +4,7 @@ import discord
 from decouple import config
 from xpOperations.XpOperations import *
 
-CHANNEL_ID = int(config('CHANNEL_ID'))
+CHANNEL_ID = config('CHANNEL_ID')
 
 class XpCalculator(commands.Cog):
     def __init__(self, bot):
