@@ -1,5 +1,6 @@
 from discord.ext import commands
 from discord.ext.commands.errors import *
+import discord
 from decouple import config
 from xpOperations.XpOperations import *
 
@@ -14,7 +15,7 @@ class XpCalculator(commands.Cog):
     async def on_ready(self):
         print(f'Bot {self.bot.user} is ready.')
 
-        channel = self.bot.utils.get(client.get_all_channels(), name=CHANNEL_ID)
+        channel = discord.utils.get(client.get_all_channels(), name=CHANNEL_ID)
         messages = await channel.history(limit=1).flatten()
 
         for messag in messages:
@@ -74,7 +75,7 @@ class XpCalculator(commands.Cog):
 
             await ctx.send(f'O personagem {name} foi criado com {xp} de Xp.')
 
-            channel = self.bot.utils.get(client.get_all_channels(), name=CHANNEL_ID)
+            channel = discord.utils.get(client.get_all_channels(), name=CHANNEL_ID)
 
             self.playersKeys = list(self.players.keys())
 
@@ -104,7 +105,7 @@ class XpCalculator(commands.Cog):
             print(f'O personagem {name} foi excluido.')
             await ctx.send(f'O personagem {name} foi excluído.')
 
-            channel = self.bot.utils.get(client.get_all_channels(), name=CHANNEL_ID)
+            channel = discord.utils.get(client.get_all_channels(), name=CHANNEL_ID)
 
             self.playersKeys = list(self.players.keys())
 
@@ -147,7 +148,7 @@ class XpCalculator(commands.Cog):
 
             response = ''
 
-            channel = self.bot.utils.get(client.get_all_channels(), name=CHANNEL_ID)
+            channel = discord.utils.get(client.get_all_channels(), name=CHANNEL_ID)
 
             self.playersKeys = list(self.players.keys())
 
@@ -223,7 +224,7 @@ class XpCalculator(commands.Cog):
         """Reload"""
         await ctx.send(f'Dados recarregados.')
 
-        channel = self.bot.utils.get(client.get_all_channels(), name=CHANNEL_ID)
+        channel = discord.utils.get(client.get_all_channels(), name=CHANNEL_ID)
         messages = await channel.history(limit=1).flatten()
 
         for messag in messages:
