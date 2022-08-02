@@ -14,7 +14,7 @@ class XpCalculator(commands.Cog):
     @commands.Cog.listener()
     async def on_ready(self):
         print(f'Bot {self.bot.user} is ready.')
-        print(channel.name for channel in self.bot.get_all_channels())
+        print([channel.name for channel in self.bot.get_all_channels()])
 
         channel = discord.utils.get(self.bot.get_all_channels(), name=CHANNEL_ID)
         messages = await channel.history(limit=1).flatten()
