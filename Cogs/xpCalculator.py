@@ -89,7 +89,10 @@ class XpCalculator(cmds.Cog):
         for message in messages:
             data += message.content + '\n'
 
-        return json.loads(data) if data != '' else {}
+        if data != '':
+            return json.loads(data)
+
+        return {}
 
     @cmds.Cog.listener()
     async def on_ready(self):
