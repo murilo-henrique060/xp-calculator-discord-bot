@@ -1,239 +1,259 @@
-from discord.ext import commands
+from discord.ext import commands as cmds
 from discord.ext.commands.errors import *
 import discord
 from decouple import config
 from xpOperations.XpOperations import *
+import json
 
-CHANNEL_ID = config('CHANNEL_ID')
+CHANNEL_NAME = config('CHANNEL_NAME')
 
-class XpCalculator(commands.Cog):
+class guildStruct():
+    def __init__(self, content : dict = None):
+        if content is None:
+            self.guilds = {}
+        else:
+            self.guilds = content
+
+    # Guild
+    def guild(self, guild_id : int):
+        return self.guilds.get(guild_id, None)
+
+    def set_guild(self, guild_id : int, data):
+        self.guilds.update({guild_id : data})
+
+    def del_guild(self, guild_id : int):
+        if guild_id in self.guilds:
+            del self.guilds[guild_id]
+
+    # Channel
+    def channel(self, guild_id : int):
+        return self.guild(guild_id).get('channel', None)
+
+    def set_channel(self, guild_id : int, channel_id : int):
+        self.guilds[guild_id].update({'channel' : channel_id})
+
+    def del_channel(self, guild_id : int):
+        if guild_id in self.guilds:
+            del self.guilds[guild_id]['channel']
+
+    # Players
+    def players(self, guild_id : int):
+        return self.guild(guild_id).get('players', None)
+
+    def set_players(self, guild_id : int, players : dict):
+        self.guilds[guild_id].update({'players' : players})
+
+    def del_players(self, guild_id : int):
+        if guild_id in self.guilds:
+            del self.guilds[guild_id]['players']
+
+    # Player
+    def player(self, guild_id : int, player : str):
+        return self.players(guild_id).get(player, None)
+
+    def set_player(self, guild_id : int, player : str, data : dict):
+        self.guilds[guild_id]['players'].update({player : data})
+
+    def del_player(self, guild_id : int, player : str):
+        if player in self.players(guild_id):
+            del self.guilds[guild_id]['players'][player]
+
+class XpCalculator(cmds.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.players = {}
+        self.guilds = guildStruct()
 
-    @commands.Cog.listener()
+    async def save(self, channel, data):
+        messages = ['']
+
+        json_data = json.dumps(data, indent=4)
+
+        for line in json_data.split('\n'):
+            if len(messages[-1] + line) > 2000:
+                messages.append(line + '\n')
+            else:
+                messages[-1] += line + '\n'
+
+        mgs = await channel.history(limit=1000).flatten()
+        await channel.delete_messages(mgs)
+
+        for message in messages:
+            if message != '':
+                await channel.send(message)
+
+    async def load(self, channel):
+        messages = await channel.history(limit=1000).flatten()
+        messages.reverse()
+        data = ''
+
+        for message in messages:
+            data += message.content + '\n'
+
+        return json.loads(data) if data != '' else {}
+
+    @cmds.Cog.listener()
     async def on_ready(self):
-        channel = discord.utils.get(self.bot.get_all_channels(), name=CHANNEL_ID)
-        messages = await channel.history(limit=1).flatten()
+        for guild in self.bot.guilds:
+            self.guilds.set_guild(guild.id, {"channel": discord.utils.get(guild.channels, name=CHANNEL_NAME)})
 
-        for messag in messages:
-            lines = messag.content.split('\n')
+            self.guilds.set_players(guild.id, await self.load(self.guilds.channel(guild.id)))
 
-            for line in lines:
-                content = line.split(', ')
+        print(f'{self.bot.user} is ready.')
 
-                self.players[str(content[0]).strip()] = {"lv": int(str(content[1]).strip()), "xp": int(str(content[2]).strip())}
-
-        print(self.players)
-
-    @commands.Cog.listener()
+    @cmds.Cog.listener()
     async def on_command_error(self, ctx, error):
         command_name = ctx.message.content.split()[0].replace('?', '')
 
-        if isinstance(error, MissingRequiredArgument):
+        if isinstance(error, (MissingRequiredArgument, BadArgument)):
             command = self.bot.get_command(command_name)
 
-            await ctx.send(f'{command.help}\n\nUso:\n    {self.bot.command_prefix}{command_name} {command.signature}')
+            await ctx.channel.send(f'{command.help}\n\nUso:\n    {self.bot.command_prefix}{command_name} {command.signature}')
 
         elif isinstance(error, CommandNotFound):
             print(f'Command {command_name} not found.')
 
-        elif isinstance(error, BadArgument):
-            match command_name:
-                case 'criarpersonagem':
-                    await ctx.send(f'O valor de Xp-inicial deve ser um inteiro.')
-
-                case 'addxp':
-                    await ctx.send(f'O valor de Xp-adicional deve ser um inteiro.')
-
-                case 'convxplv':
-                    await ctx.send(f'O valor de Xp deve ser um inteiro.')
-
-                case 'convlvxp':
-                    await ctx.send(f'O valor de Lv deve ser um inteiro.')
-
-                case 'proximolv':
-                    await ctx.send(f'O valor de Xp deve ser um inteiro.')
-
         else:
             raise error
 
-    @commands.command(name='criarpersonagem', help='Cria um novo personagem.')
+    @cmds.command(name='criarpersonagem', aliases=['cp'], help='Cria um novo personagem.')
     async def addPlayer(self, ctx, name: str, xp: int = 0):
         """Create Player"""
-        if name in list(self.players.keys()):
+        guild = ctx.guild.id
+
+        if name in list(self.guilds.players(guild).keys()):
             await ctx.send(f'O personagem {name} já existe.')
 
         else:
-            response = ''
+            self.guilds.set_player(guild, name, {"lv": convertXpLv(xp), "xp": xp})
 
-            self.players[name] = {"lv": convertXpLv(xp), "xp": xp}
+            print(f'O personagem {name} foi criado com {xp} de xp inicial.')
 
-            print(f'O personagem {name} foi criado com {self.players[name]["xp"]} de xp inicial.')
+            await ctx.channel.send(f'O personagem {name} foi criado com {xp} de Xp.')
 
-            await ctx.send(f'O personagem {name} foi criado com {xp} de Xp.')
+            await self.save(self.guilds.channel(guild), self.guilds.players(guild))
 
-            channel = discord.utils.get(self.bot.get_all_channels(), name=CHANNEL_ID)
-
-            self.playersKeys = list(self.players.keys())
-
-            for i in range(len(self.playersKeys)):
-                if i == 0:
-                    response += f'{self.playersKeys[i]}, {self.players[self.playersKeys[i]]["lv"]}, {self.players[self.playersKeys[i]]["xp"]}'
-
-                else:
-                    response += f'\n{self.playersKeys[i]}, {self.players[self.playersKeys[i]]["lv"]}, {self.players[self.playersKeys[i]]["xp"]}'
-
-            messages = await channel.history(limit=10).flatten()
-
-            ctx.channel = channel
-
-            await ctx.channel.delete_messages(messages)
-
-            await ctx.channel.send(response)
-
-    @commands.command(name='excluirpersonagem', help='Remove um personagem.')
+    @cmds.command(name='excluirpersonagem', aliases=['ep'], help='Remove um personagem.')
     async def deletePlayer(self, ctx, name: str):
         """Delete Player"""
-        if name in list(self.players.keys()):
-            response = ''
-
-            del self.players[name]
+        guild = ctx.guild.id
+        if self.guilds.player(guild, name) is not None:
+            self.guilds.del_player(guild, name)
 
             print(f'O personagem {name} foi excluido.')
             await ctx.send(f'O personagem {name} foi excluído.')
 
-            channel = discord.utils.get(self.bot.get_all_channels(), name=CHANNEL_ID)
-
-            self.playersKeys = list(self.players.keys())
-
-            for i in range(len(self.playersKeys)):
-                if i == 0:
-                    response += f'{self.playersKeys[i]}, {self.players[self.playersKeys[i]]["lv"]}, {self.players[self.playersKeys[i]]["xp"]}'
-
-                else:
-                    response += f'\n{self.playersKeys[i]}, {self.players[self.playersKeys[i]]["lv"]}, {self.players[self.playersKeys[i]]["xp"]}'
-
-            messages = await channel.history(limit=1).flatten()
-
-            ctx.channel = channel
-
-            await ctx.channel.delete_messages(messages)
-
-            await ctx.channel.send(response)
+            await self.save(self.guilds.channel(guild), self.guilds.players(guild))
 
         else:
             await ctx.send(f'O personagem {name} não existe.')
 
-    @commands.command(name='addxp', help='Adiciona Xp a um personagem.')
+    @cmds.command(name='addxp', help='Adiciona Xp a um personagem.')
     async def addXp(self, ctx, name: str, xp: int):
         """Add Xp"""
-        if name in list(self.players.keys()):
-            response = ''
+        if name in list(self.guilds[ctx.guild.id]["players"].keys()):
+            self.guilds[ctx.guild.id]["players"][name]["xp"] = maxXp(self.guilds[ctx.guild.id]["players"][name]["xp"] + xp)
+            self.guilds[ctx.guild.id]["players"][name]["lv"] = convertXpLv(self.guilds[ctx.guild.id]["players"][name]["xp"])
 
-            self.players[name]["xp"]  = maxXp(self.players[name]["xp"] + xp)
-            self.players[name]["lv"] = convertXpLv(self.players[name]["xp"])
-
-            if self.players[name]["lv"] == 30000:
-                print(f'O personagem {name} chegou ao nível máximo.')
-                response = f'O personagem {name} tem {self.players[name]["xp"]} de Xp e está no nível máximo {self.players[name]["lv"]}'
+            if self.guilds[ctx.guild.id]["players"][name]["lv"] == MAX_LV:
+                print(f'O personagem {name} alcançou o nível máximo.')
+                await ctx.send(f'{name} alcançou o nível máximo.')
 
             else:
                 print(f'O personagem {name} ganhou {xp} de Xp.')
-                response = f'{xp} de xp foi adicionado ao personagem {name}.\nO personagem {name} tem {self.players[name]["xp"]} de Xp, está no nível {self.players[name]["lv"]} e falta {xpMissingNxtLV(self.players[name]["lv"],self.players[name]["xp"])} de Xp para o próximo nível.'
+                await ctx.send(f'{name} ganhou {xp} de Xp.')
 
-            await ctx.send(response)
-
-            response = ''
-
-            channel = discord.utils.get(self.bot.get_all_channels(), name=CHANNEL_ID)
-
-            self.playersKeys = list(self.players.keys())
-
-            for i in range(len(self.playersKeys)):
-                if i == 0:
-                    response += f'{self.playersKeys[i]}, {self.players[self.playersKeys[i]]["lv"]}, {self.players[self.playersKeys[i]]["xp"]}'
-
-                else:
-                    response += f'\n{self.playersKeys[i]}, {self.players[self.playersKeys[i]]["lv"]}, {self.players[self.playersKeys[i]]["xp"]}'
-
-            messages = await channel.history(limit=1).flatten()
-
-            ctx.channel = channel
-
-            await ctx.channel.delete_messages(messages)
-
-            await ctx.channel.send(response)
+            await self.save(self.guilds[ctx.guild.id]["channel_id"], self.guilds[ctx.guild.id]["players"])
 
         else:
-            await ctx.send(f'O personagem {name} não existe.')
+            await ctx.send(f'O personagem {name} não existe. Use o comando ?cp para criar um presonagem.')
 
-    @commands.command(name='mostrarpersonagem', help='Mostra os dados de um personagem.')
+    @cmds.command(name='mostrarpersonagem', aliases=['mp'], help='Mostra os dados de um personagem.')
     async def showPlayer(self, ctx, name: str):
         """Show Player"""
-        if name in list(self.players.keys()):
-            if self.players[name]["lv"] < 30000:
-                await ctx.send(f'O personagem {name} tem {self.players[name]["xp"]} de Xp, está no nível {self.players[name]["lv"]} e falta {xpMissingNxtLV(self.players[name]["lv"],self.players[name]["xp"])} de Xp para o próximo nível.')
+        guild = ctx.guild.id
+
+        if self.guilds.player(guild, name) is not None:
+            xp = self.guilds.player(guild, name)["xp"]
+            lv = self.guilds.player(guild, name)["lv"]
+
+            if lv < MAX_LV:
+                await ctx.send(f'O personagem {name} tem {xp} de Xp, está no nível {lv} e falta {xpMissingNxtLV(lv, xp)} de Xp para o próximo nível.')
 
             else:
-                await ctx.send(f'O personagem {name} tem {self.players[name]["xp"]} de Xp e está no nível máximo {self.players[name]["lv"]}.')
+                await ctx.send(f'O personagem {name} tem {xp} de Xp e está no nível máximo {lv}.')
 
         else:
             await ctx.send(f'O personagem {name} não existe.')
 
-    @commands.command(name='mostrartodos', help='Mostra todos os personagens.')
+    @cmds.command(name='mostrartodos', aliases=['mt'], help='Mostra todos os personagens.')
     async def showAll(self, ctx):
         """Show All"""
-        response = ''
+        guild = ctx.guild.id
+        info = ''
+        for player in self.guilds.players(guild).keys():
+            xp = self.guilds.player(guild, player)["xp"]
+            lv = self.guilds.player(guild, player)["lv"]
 
-        self.playersKeys = list(self.players.keys())
-
-        for i in range(len(self.playersKeys)):
-            if self.players[self.playersKeys[i]]["lv"] < 30000:
-                response += f'O personagem {self.playersKeys[i]} tem {self.players[self.playersKeys[i]]["xp"]} de Xp, está no nível {self.players[self.playersKeys[i]]["lv"]} e falta {xpMissingNxtLV(self.players[self.playersKeys[i]]["lv"],self.players[self.playersKeys[i]]["xp"])} de Xp para o próximo nível.\n'
+            if lv < MAX_LV:
+                info += f'O personagem {player} tem {xp} de Xp, está no nível {lv} e falta {xpMissingNxtLV(lv, xp)} de Xp para o próximo nível.\n'
 
             else:
-                response += f'O personagem {self.playersKeys[i]} tem {self.players[self.playersKeys[i]]["xp"]} de Xp e está no nível máximo {self.players[self.playersKeys[i]]["lv"]}.\n'
+                info += f'O personagem {player} tem {xp} de Xp e está no nível máximo {lv}.\n'
 
-        await ctx.send(response)
+        if info != '':
+            await ctx.send(info)
+        else:
+            await ctx.send('Não há personagens cadastrados.')
 
-    @commands.command(name='convxplv', help='Converte Xp em nível.')
+    @cmds.command(name='convxplv', aliases=['cxplv'], help='Converte Xp em nível.')
     async def convertXpLv(self, ctx, xp: int):
         """Convert Xp Lv"""
         await ctx.send(f'Nível {convertXpLv(xp)}.')
 
-    @commands.command(name='convlvxp', help='Converte nível em Xp.')
+    @cmds.command(name='convlvxp', aliases=['clvxp'], help='Converte nível em Xp.')
     async def convertLvXp(self, ctx, lv: int):
         """Convert Lv Xp"""
         await ctx.send(f'Xp {convertLvXp(lv)}.')
 
-    @commands.command(name='proximolv', help='Mostra a quantidade de xp necessária para o próximo nível.')
+    @cmds.command(name='proximolv', help='Mostra a quantidade de xp necessária para o próximo nível.')
     async def nextLv(self, ctx, xp: int):
         """Next Lv"""
         await ctx.send(f'{xpMissingNxtLV(convertXpLv(xp),xp)}.')
 
-    @commands.command(name='intervenção', help='livrai-vos de todo malware.')
+    @cmds.command(name='benção', help='livrai-vos de todo malware.')
     async def help(self, ctx):
         """Help"""
         await ctx.send('Código nosso que está em C\nSantificado seja vós, console\nVenha nos o vosso array[10]\nE seja feita, {vossa chave}\nAssim no if{\n} Como no Else{\n} \nO for(nosso;de cada dia;nos daí hoje++)\nDebugai as nossas sentenças \nAssim como nós colocamos o ponto e vírgula esquecido;\nE não nos\n     Deixeis errar\n             Indentação\nMas compilai nosso código\nA main().')
 
-    @commands.command(name='reload', help='Recarrega os dados do bot.')
+    @cmds.command(name='reload', help='Recarrega os dados do bot.')
     async def reload(self, ctx):
         """Reload"""
-        await ctx.send(f'Dados recarregados.')
 
-        channel = discord.utils.get(self.bot.get_all_channels(), name=CHANNEL_ID)
-        messages = await channel.history(limit=1).flatten()
+        channel = discord.utils.get(ctx.guild.channels, name=CHANNEL_NAME)
+        if channel is not None:
+            self.guilds.set_guild(ctx.guild.id, {"channel": channel, "players": await self.load(channel)})
+            await ctx.send('Dados recarregados.')
 
-        for messag in messages:
-            lines = messag.content.split('\n')
+    @cmds.command(name='backup', help='Faz um backup dos dados do bot.')
+    async def backup(self, ctx):
+        """Backup"""
+        data = json.dumps(self.guilds.players(ctx.guild.id), indent=4)
+        filename = f'{ctx.guild.name}_backup.json'
+        with open(filename, 'w') as f:
+            f.write(data)
+        file = discord.File(filename)
+        await ctx.author.send("anexe o arquivo na mesagem e use ?load para carregar o backup", file=file)
 
-            for line in lines:
-                content = line.split(', ')
+    @cmds.command(name='load', help='Carrega um backup.')
+    async def load_backup(self, ctx):
+        """Load"""
+        
+        f = await ctx.message.attachments[0].read()
+        data = json.loads(f)
 
-                self.players[str(content[0]).strip()] = {"lv": int(str(content[1]).strip()), "xp": int(str(content[2]).strip())}
-
-        print(self.players)
+        self.guilds.set_players(ctx.guild.id, data)
+        await self.save(self.guilds.channel(ctx.guild.id), data)
+        await ctx.send('Dados carregados.')
 
 def setup(bot):
     bot.add_cog(XpCalculator(bot))

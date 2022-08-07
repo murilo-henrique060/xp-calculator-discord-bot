@@ -2,6 +2,9 @@
 *.code-workspace
 .vscode/*
 
+# backup and temp files
+backup.json
+
 # Test Text File
 xpcalculatortest.txt
 

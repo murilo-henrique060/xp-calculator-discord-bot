@@ -1,5 +1,7 @@
-MAX_LV = 30000
-MAX_XP = 225007500000
+from decouple import config
+
+MAX_LV = config('MAX_LV', cast=int)
+MAX_XP = config('MAX_XP', cast=int)
 
 def convertXpLv(xp: int) -> int:
     from math import sqrt
@@ -9,7 +11,7 @@ def convertXpLv(xp: int) -> int:
     except ValueError:
         return False
 
-    return int((-5 + sqrt(25 - 20 * (-2 * (xp / 100))))/10) if xp <= MAX_XP else MAX_LV
+    return min(int((-5 + sqrt(25 - 20 * (-2 * (xp / 100))))/10), MAX_LV)
 
 def convertLvXp(lv: int) -> int:
     try:
@@ -17,7 +19,7 @@ def convertLvXp(lv: int) -> int:
     except ValueError:
         return False
 
-    return int(500 * (((lv + 1) * lv) / 2)) if lv <= MAX_LV else MAX_XP
+    return min(int(500 * (((lv + 1) * lv) / 2)), MAX_XP)
 
 def xpMissingNxtLV(lv: int, xp: int) -> int:
     try:
@@ -34,7 +36,7 @@ def maxXp(xp: int) -> int:
     except ValueError:
         return False
 
-    return xp if xp < MAX_XP else MAX_XP
+    return min(xp, MAX_XP)
 
 def maxLv(lv: int) -> int:
     try:
@@ -42,4 +44,4 @@ def maxLv(lv: int) -> int:
     except ValueError:
         return False
 
-    return lv if lv < MAX_LV else MAX_LV
+    return min(lv, MAX_LV)
