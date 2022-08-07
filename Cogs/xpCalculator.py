@@ -89,10 +89,12 @@ class XpCalculator(cmds.Cog):
         for message in messages:
             data += message.content + '\n'
 
-        if data != '':
+        try:
             return json.loads(data)
-
-        return {}
+        except json.decoder.JSONDecodeError:
+            print('Erro ao carregar o arquivo.')
+            print(data)
+            return {}
 
     @cmds.Cog.listener()
     async def on_ready(self):
