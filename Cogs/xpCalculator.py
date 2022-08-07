@@ -154,10 +154,11 @@ class XpCalculator(cmds.Cog):
     async def addXp(self, ctx, name: str, xp: int):
         """Add Xp"""
         if self.guilds.player(ctx.guild.id, name) is not None:
-            self.guilds[ctx.guild.id]["players"][name]["xp"] = maxXp(self.guilds[ctx.guild.id]["players"][name]["xp"] + xp)
-            self.guilds[ctx.guild.id]["players"][name]["lv"] = convertXpLv(self.guilds[ctx.guild.id]["players"][name]["xp"])
+            n_xp = self.guilds.player(ctx.guild.id, name)['xp'] + xp
+            lv = convertXpLv(n_xp)
+            self.guilds.set_player(ctx.guild.id, name, {"lv": lv, "xp": n_xp})
 
-            if self.guilds[ctx.guild.id]["players"][name]["lv"] == MAX_LV:
+            if lv == MAX_LV:
                 print(f'O personagem {name} alcançou o nível máximo.')
                 await ctx.send(f'{name} alcançou o nível máximo.')
 
@@ -165,7 +166,7 @@ class XpCalculator(cmds.Cog):
                 print(f'O personagem {name} ganhou {xp} de Xp.')
                 await ctx.send(f'{name} ganhou {xp} de Xp.')
 
-            await self.save(self.guilds[ctx.guild.id]["channel_id"], self.guilds[ctx.guild.id]["players"])
+            await self.save(self.guilds.channel(ctx.guild.id), self.guilds.players(ctx.guild.id))
 
         else:
             await ctx.send(f'O personagem {name} não existe. Use o comando ?cp para criar um presonagem.')
@@ -184,6 +185,8 @@ class XpCalculator(cmds.Cog):
 
             else:
                 await ctx.send(f'O personagem {name} tem {xp} de Xp e está no nível máximo {lv}.')
+
+            print(f'O personagem {name} foi mostrado.')
 
         else:
             await ctx.send(f'O personagem {name} não existe.')
@@ -208,25 +211,31 @@ class XpCalculator(cmds.Cog):
         else:
             await ctx.send('Não há personagens cadastrados.')
 
+        print('Os personagens foram mostrados.')
+
     @cmds.command(name='convxplv', aliases=['cxplv'], help='Converte Xp em nível.')
     async def convertXpLv(self, ctx, xp: int):
         """Convert Xp Lv"""
         await ctx.send(f'Nível {convertXpLv(xp)}.')
+        print(f'{xp} de Xp convertido para nível {convertXpLv(xp)}.')
 
     @cmds.command(name='convlvxp', aliases=['clvxp'], help='Converte nível em Xp.')
     async def convertLvXp(self, ctx, lv: int):
         """Convert Lv Xp"""
         await ctx.send(f'Xp {convertLvXp(lv)}.')
+        print(f'Nível {lv} convertido para {convertLvXp(lv)} de Xp.')
 
     @cmds.command(name='proximolv', help='Mostra a quantidade de xp necessária para o próximo nível.')
     async def nextLv(self, ctx, xp: int):
         """Next Lv"""
         await ctx.send(f'{xpMissingNxtLV(convertXpLv(xp),xp)}.')
+        print(f'{xpMissingNxtLV(convertXpLv(xp),xp)} de Xp para o próximo nível.')
 
     @cmds.command(name='benção', help='livrai-vos de todo malware.')
     async def help(self, ctx):
         """Help"""
         await ctx.send('Código nosso que está em C\nSantificado seja vós, console\nVenha nos o vosso array[10]\nE seja feita, {vossa chave}\nAssim no if{\n} Como no Else{\n} \nO for(nosso;de cada dia;nos daí hoje++)\nDebugai as nossas sentenças \nAssim como nós colocamos o ponto e vírgula esquecido;\nE não nos\n     Deixeis errar\n             Indentação\nMas compilai nosso código\nA main().')
+        print('Ajuda mostrada.')
 
     @cmds.command(name='reload', help='Recarrega os dados do bot.')
     async def reload(self, ctx):
@@ -236,6 +245,7 @@ class XpCalculator(cmds.Cog):
         if channel is not None:
             self.guilds.set_guild(ctx.guild.id, {"channel": channel, "players": await self.load(channel)})
             await ctx.send('Dados recarregados.')
+            print('Dados recarregados.')
 
     @cmds.command(name='backup', help='Faz um backup dos dados do bot.')
     async def backup(self, ctx):
@@ -246,17 +256,18 @@ class XpCalculator(cmds.Cog):
             f.write(data)
         file = discord.File(filename)
         await ctx.author.send("anexe o arquivo na mesagem e use ?load para carregar o backup", file=file)
+        print('Backup feito.')
 
     @cmds.command(name='load', help='Carrega um backup.')
     async def load_backup(self, ctx):
         """Load"""
-        
         f = await ctx.message.attachments[0].read()
         data = json.loads(f)
 
         self.guilds.set_players(ctx.guild.id, data)
         await self.save(self.guilds.channel(ctx.guild.id), data)
         await ctx.send('Dados carregados.')
+        print('Dados carregados.')
 
 def setup(bot):
     bot.add_cog(XpCalculator(bot))
