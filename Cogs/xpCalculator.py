@@ -153,7 +153,7 @@ class XpCalculator(cmds.Cog):
     @cmds.command(name='addxp', help='Adiciona Xp a um personagem.')
     async def addXp(self, ctx, name: str, xp: int):
         """Add Xp"""
-        if name in list(self.guilds[ctx.guild.id]["players"].keys()):
+        if self.guilds.player(ctx.guild.id, name) is not None:
             self.guilds[ctx.guild.id]["players"][name]["xp"] = maxXp(self.guilds[ctx.guild.id]["players"][name]["xp"] + xp)
             self.guilds[ctx.guild.id]["players"][name]["lv"] = convertXpLv(self.guilds[ctx.guild.id]["players"][name]["xp"])
 
